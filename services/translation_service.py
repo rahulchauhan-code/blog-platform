@@ -45,6 +45,15 @@ class TranslationService:
         Returns:
             str: Translated text or original text if translation fails
         """
+        # Short-circuit if translations are disabled in config (production hotfix)
+        try:
+            if not current_app.config.get('TRANSLATION_ENABLED', True):
+                logger.info('Translation disabled by configuration; returning original text')
+                return text
+        except Exception:
+            # if current_app unavailable, continue
+            pass
+
         if not text or target_lang == 'en':
             return text
             

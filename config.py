@@ -30,6 +30,8 @@ class Config:
     # Translation API
     TRANSLATION_API_URL = os.environ.get('TRANSLATION_API_URL', 'https://libretranslate.de/translate')
     TRANSLATION_API_KEY = os.environ.get('TRANSLATION_API_KEY', '')
+    # Toggle runtime translation to avoid external API calls in production
+    TRANSLATION_ENABLED = os.environ.get('TRANSLATION_ENABLED', 'true').lower() == 'true'
     
     # Session Configuration
     SESSION_COOKIE_HTTPONLY = True
@@ -51,6 +53,8 @@ class ProductionConfig(Config):
     DEBUG = False
     SQLALCHEMY_ECHO = False
     SESSION_COOKIE_SECURE = True
+    # Disable translations by default in production to avoid rate limits/outages
+    TRANSLATION_ENABLED = False
 
 config = {
     'development': DevelopmentConfig,
