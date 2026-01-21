@@ -1,8 +1,28 @@
 import requests
 import logging
+import functools
 from flask import current_app
 
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 logger = logging.getLogger(__name__)
+
+# Shared session with retries to handle transient errors and 429s
+_session = requests.Session()
+_retry_strategy = Retry(
+    total=2,
+    backoff_factor=0.8,
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=["GET", "POST"],
+    raise_on_status=False,
+)
+_adapter = HTTPAdapter(max_retries=_retry_strategy)
+_session.mount("https://", _adapter)
+_session.mount("http://", _adapter)
+
+# Small in-memory cache to avoid repeated identical requests
+_CACHE_MAXSIZE = 1024
 
 class TranslationService:
     """Service to handle text translation using LibreTranslate API"""
@@ -29,22 +49,35 @@ class TranslationService:
 
             logger.debug(f"Translating text to {target_lang}: {text[:50]}...")
 
-            # Try configured translation endpoint first, otherwise fall back to MyMemory
-            if api_url and api_url.strip():
-                try:
-                    return TranslationService._translate_with_libretranslate(
-                        text, target_lang, source_lang, api_url, api_key
-                    )
-                except Exception as e:
-                    # Log and fall back to MyMemory
-                    logger.warning(f"LibreTranslate failed, falling back to MyMemory: {e}")
+            # Use cached wrapper to reduce duplicate translations and API calls
+            try:
+                return TranslationService._cached_translate_call(api_url, api_key, text, target_lang, source_lang)
+            except Exception as e:
+                logger.warning(f"Cached translation call failed, attempting uncached fallback: {e}")
+                # Best-effort: try uncached calls
+                if api_url and api_url.strip():
+                    try:
+                        return TranslationService._translate_with_libretranslate(text, target_lang, source_lang, api_url, api_key)
+                    except Exception:
+                        return TranslationService._translate_with_mymemory(text, target_lang, source_lang)
+                else:
                     return TranslationService._translate_with_mymemory(text, target_lang, source_lang)
-            else:
-                return TranslationService._translate_with_mymemory(text, target_lang, source_lang)
 
         except Exception as e:
             logger.exception(f"Unexpected translation error: {str(e)}")
             return text
+    
+    @functools.lru_cache(maxsize=_CACHE_MAXSIZE)
+    def _cached_translate_call(api_url, api_key, text, target_lang, source_lang):
+        """Cached wrapper around translation calls to reduce repeated API usage."""
+        # Prefer configured endpoint, fall back to MyMemory
+        if api_url and api_url.strip():
+            try:
+                return TranslationService._translate_with_libretranslate(text, target_lang, source_lang, api_url, api_key)
+            except Exception:
+                return TranslationService._translate_with_mymemory(text, target_lang, source_lang)
+        else:
+            return TranslationService._translate_with_mymemory(text, target_lang, source_lang)
     
     @staticmethod
     def _translate_with_libretranslate(text, target_lang, source_lang, api_url, api_key):
@@ -59,16 +92,21 @@ class TranslationService:
             payload['api_key'] = api_key
         
         try:
-            # Let requests follow redirects by default and prefer JSON payloads
-            response = requests.post(api_url, json=payload, timeout=10)
+            # Use shared session (with retry/backoff) and prefer JSON payloads
+            response = _session.post(api_url, json=payload, timeout=10)
+            # Handle rate limiting gracefully: fall back to MyMemory if over limit
+            if response.status_code == 429:
+                logger.warning("LibreTranslate responded with 429 Too Many Requests; falling back to MyMemory")
+                return TranslationService._translate_with_mymemory(text, target_lang, source_lang)
+
             response.raise_for_status()
 
             try:
                 result = response.json()
             except ValueError:
-                # Non-JSON response — log and raise so caller can fall back
+                # Non-JSON response — log and fall back to MyMemory
                 logger.warning("LibreTranslate returned non-JSON response: %s", response.text[:200])
-                raise
+                return TranslationService._translate_with_mymemory(text, target_lang, source_lang)
 
             # LibreTranslate typical key
             translated = result.get('translatedText') or result.get('result') or result.get('translation')
@@ -92,7 +130,12 @@ class TranslationService:
         }
 
         try:
-            response = requests.get(url, params=params, timeout=10)
+            response = _session.get(url, params=params, timeout=10)
+            # If we hit rate limits, return original text (do not raise)
+            if response.status_code == 429:
+                logger.warning("MyMemory returned 429 Too Many Requests for text: %s...", text[:60])
+                return text
+
             response.raise_for_status()
             result = response.json()
 
