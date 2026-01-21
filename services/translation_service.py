@@ -2,6 +2,7 @@ import requests
 import logging
 import functools
 from flask import current_app
+import time
 
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -11,8 +12,8 @@ logger = logging.getLogger(__name__)
 # Shared session with retries to handle transient errors and 429s
 _session = requests.Session()
 _retry_strategy = Retry(
-    total=2,
-    backoff_factor=0.8,
+    total=1,
+    backoff_factor=0.5,
     status_forcelist=[429, 500, 502, 503, 504],
     allowed_methods=["GET", "POST"],
     raise_on_status=False,
@@ -23,6 +24,10 @@ _session.mount("http://", _adapter)
 
 # Small in-memory cache to avoid repeated identical requests
 _CACHE_MAXSIZE = 1024
+
+# Simple cooldown state to avoid repeatedly calling rate-limited services
+_last_rate_limit_hit = 0.0
+_COOLDOWN_SECONDS = 60
 
 class TranslationService:
     """Service to handle text translation using LibreTranslate API"""
@@ -48,6 +53,17 @@ class TranslationService:
             api_key = current_app.config.get('TRANSLATION_API_KEY', '')
 
             logger.debug(f"Translating text to {target_lang}: {text[:50]}...")
+
+            # If we recently hit a rate limit, avoid calling external services to
+            # prevent blocking the web worker. Return original text as a safe fallback.
+            try:
+                global _last_rate_limit_hit
+                if _last_rate_limit_hit and (time.time() - _last_rate_limit_hit) < _COOLDOWN_SECONDS:
+                    logger.warning("Translation service in cooldown; skipping external calls")
+                    return text
+            except Exception:
+                # Fall through to normal behavior if cooldown check fails
+                pass
 
             # Use cached wrapper to reduce duplicate translations and API calls
             try:
@@ -93,10 +109,13 @@ class TranslationService:
         
         try:
             # Use shared session (with retry/backoff) and prefer JSON payloads
-            response = _session.post(api_url, json=payload, timeout=10)
+
+            response = _session.post(api_url, json=payload, timeout=3)
             # Handle rate limiting gracefully: fall back to MyMemory if over limit
             if response.status_code == 429:
                 logger.warning("LibreTranslate responded with 429 Too Many Requests; falling back to MyMemory")
+                global _last_rate_limit_hit
+                _last_rate_limit_hit = time.time()
                 return TranslationService._translate_with_mymemory(text, target_lang, source_lang)
 
             response.raise_for_status()
@@ -130,10 +149,12 @@ class TranslationService:
         }
 
         try:
-            response = _session.get(url, params=params, timeout=10)
-            # If we hit rate limits, return original text (do not raise)
+            response = _session.get(url, params=params, timeout=3)
+            # If we hit rate limits, record and return original text (do not raise)
             if response.status_code == 429:
                 logger.warning("MyMemory returned 429 Too Many Requests for text: %s...", text[:60])
+                global _last_rate_limit_hit
+                _last_rate_limit_hit = time.time()
                 return text
 
             response.raise_for_status()

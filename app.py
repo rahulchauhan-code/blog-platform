@@ -65,6 +65,11 @@ def create_app(config_name='development'):
             logger.exception('Error inspecting database')
             return jsonify({'error': str(e)}), 500
 
+    # Lightweight healthcheck endpoint that does not touch the database
+    @app.route('/health')
+    def health():
+        return jsonify({'status': 'ok'}), 200
+
     @app.context_processor
     def inject_globals():
         """Provide `current_lang` and `supported_languages` to all templates."""
