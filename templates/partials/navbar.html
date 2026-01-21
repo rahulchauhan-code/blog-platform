@@ -1,0 +1,45 @@
+<!-- Skip link for keyboard users -->
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container navbar-inner">
+        <div class="nav-left">
+            <div class="nav-brand">
+                <a href="{{ url_for('main.index') }}">
+                    <img src="{{ url_for('static', filename='favicon.svg') }}" alt="Multi-Lang Blog logo" class="nav-logo">
+                    <span class="brand-text">Multi-Lang Blog</span>
+                </a>
+            </div>
+        </div>
+
+        <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="site-navigation" onclick="toggleNav(this)">
+            <span class="hamburger"></span>
+        </button>
+
+        <div class="nav-right" id="site-navigation">
+            <ul class="nav-menu">
+                <li><a href="{{ url_for('main.index') }}">Home</a></li>
+                <li><a href="{{ url_for('main.about') }}">About</a></li>
+                {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('posts.create') }}">Create Post</a></li>
+                    <li><a href="{{ url_for('posts.my_posts') }}">My Posts</a></li>
+                    <li><a href="{{ url_for('main.profile', user_id=current_user.user_id) }}">Profile</a></li>
+                    <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('auth.login') }}">Login</a></li>
+                    <li><a href="{{ url_for('auth.register') }}">Register</a></li>
+                {% endif %}
+            </ul>
+
+            <!-- Language Selector -->
+            <div class="language-selector">
+                <select id="languageSelect" onchange="changeLanguage(this.value)">
+                    {% set lang = current_lang|default('en') %}
+                    {% for code, name in supported_languages.items() %}
+                        <option value="{{ code }}" {% if lang == code %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+</nav>

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}My Posts - Multi-Language Blog{% endblock %}
+
+{% block content %}
+<div class="my-posts-container">
+    <h1>My Posts</h1>
+    <a href="{{ url_for('posts.create') }}" class="btn btn-primary">Create New Post</a>
+    
+    {% if posts %}
+        <div class="posts-list">
+            {% for post in posts %}
+                <div class="post-item">
+                    <div class="post-item-header">
+                        <h3>
+                            <a href="{{ url_for('posts.view', post_id=post.post_id) }}">
+                                {{ post.contents[0].title if post.contents else 'Untitled' }}
+                            </a>
+                        </h3>
+                        <span class="badge badge-{{ 'success' if post.status == 'published' else 'warning' }}">
+                            {{ post.status }}
+                        </span>
+                    </div>
+                    <div class="post-item-meta">
+                        <span>Category: {{ post.category or 'Uncategorized' }}</span>
+                        <span>Created: {{ post.created_at.strftime('%B %d, %Y') }}</span>
+                    </div>
+                    <div class="post-item-actions">
+                        <a href="{{ url_for('posts.view', post_id=post.post_id) }}" class="btn btn-sm btn-secondary">View</a>
+                        <a href="{{ url_for('posts.edit', post_id=post.post_id) }}" class="btn btn-sm btn-primary">Edit</a>
+                        <form method="POST" action="{{ url_for('posts.delete', post_id=post.post_id) }}" style="display: inline;" onsubmit="return confirm('Are you sure?');">
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>You haven't created any posts yet.</p>
+            <a href="{{ url_for('posts.create') }}" class="btn btn-primary">Create Your First Post</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

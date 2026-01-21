@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Multi-Language Blog{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Welcome to Multi-Language Blog</h1>
+    <p>Share your thoughts in any language, read content in your preferred language</p>
+</div>
+
+<div class="posts-grid">
+    {% if posts %}
+        {% for post in posts %}
+            <div class="post-card">
+                <div class="post-header">
+                    <span class="post-category">{{ post.category or 'Uncategorized' }}</span>
+                    <span class="post-date">{{ post.created_at.strftime('%B %d, %Y') }}</span>
+                </div>
+                
+                {% if post.contents %}
+                    <h2 class="post-title">
+                        <a href="{{ url_for('posts.view', post_id=post.post_id, lang=current_lang) }}">
+                            {{ post.contents[0].title }}
+                        </a>
+                    </h2>
+                    <p class="post-excerpt">
+                        {{ post.contents[0].content[:200] }}...
+                    </p>
+                {% endif %}
+                
+                <div class="post-footer">
+                    <span class="post-author">
+                        By <a href="{{ url_for('main.profile', user_id=post.author.user_id) }}">
+                            {{ post.author.name }}
+                        </a>
+                    </span>
+                    <a href="{{ url_for('posts.view', post_id=post.post_id, lang=current_lang) }}" class="read-more">
+                        Read More →
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <h2>No posts yet</h2>
+            <p>Be the first to create a post!</p>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('posts.create') }}" class="btn btn-primary">Create Post</a>
+            {% else %}
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Get Started</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Pagination -->
+{% if pagination and pagination.pages > 1 %}
+<div class="pagination">
+    {% if pagination.has_prev %}
+        <a href="{{ url_for('main.index', page=pagination.prev_num, lang=current_lang) }}" class="page-link">← Previous</a>
+    {% endif %}
+    
+    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+        {% if page_num %}
+            {% if page_num == pagination.page %}
+                <span class="page-link active">{{ page_num }}</span>
+            {% else %}
+                <a href="{{ url_for('main.index', page=page_num, lang=current_lang) }}" class="page-link">{{ page_num }}</a>
+            {% endif %}
+        {% else %}
+            <span class="page-link">...</span>
+        {% endif %}
+    {% endfor %}
+    
+    {% if pagination.has_next %}
+        <a href="{{ url_for('main.index', page=pagination.next_num, lang=current_lang) }}" class="page-link">Next →</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

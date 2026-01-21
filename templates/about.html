@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}About - Multi-Language Blog{% endblock %}
+
+{% block content %}
+<div class="about-container">
+    <h1>About Multi-Language Blog</h1>
+    
+    <section class="about-section">
+        <h2>Our Mission</h2>
+        <p>
+            Multi-Language Blog is a platform that breaks down language barriers in content creation and consumption. 
+            Write in your native language, and let readers from around the world enjoy your content in theirs.
+        </p>
+    </section>
+    
+    <section class="about-section">
+        <h2>Features</h2>
+        <ul class="features-list">
+            <li>✨ Write posts in any language</li>
+            <li>🌍 Read content in 12+ languages</li>
+            <li>🔄 Real-time translation powered by LibreTranslate</li>
+            <li>👥 User profiles and post management</li>
+            <li>📱 Responsive design for all devices</li>
+            <li>🔒 Secure authentication system</li>
+        </ul>
+    </section>
+    
+    <section class="about-section">
+        <h2>Technology Stack</h2>
+        <ul class="tech-list">
+            <li>Backend: Flask (Python)</li>
+            <li>Database: Oracle Database</li>
+            <li>Translation: LibreTranslate API</li>
+            <li>Frontend: HTML5, CSS3, JavaScript</li>
+            <li>Authentication: Flask-Login</li>
+        </ul>
+    </section>
+    
+    <section class="about-section">
+        <h2>Get Started</h2>
+        <p>
+            Join our community today and start sharing your thoughts with the world!
+        </p>
+        {% if not current_user.is_authenticated %}
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Create an Account</a>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

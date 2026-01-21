@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Create Post - Multi-Language Blog{% endblock %}
+
+{% block content %}
+<div class="post-form-container">
+    <h1>Create New Post</h1>
+    <form method="POST" action="{{ url_for('posts.create') }}">
+        <div class="form-group">
+            <label for="title">Post Title</label>
+            <input type="text" id="title" name="title" required class="form-control" placeholder="Enter your post title">
+        </div>
+        
+        <div class="form-group">
+            <label for="category">Category</label>
+            <input type="text" id="category" name="category" class="form-control" placeholder="e.g., Technology, Travel, Food">
+        </div>
+        
+        <div class="form-group">
+            <label for="content">Content</label>
+            <textarea id="content" name="content" rows="15" required class="form-control" placeholder="Write your post content here..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" name="status" class="form-control">
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+            </select>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create Post</button>
+            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

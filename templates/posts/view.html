@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.contents[0].title if post.contents else 'Post' }} - Multi-Language Blog{% endblock %}
+
+{% block content %}
+<article class="post-detail">
+    <div class="post-header-detail">
+        <span class="post-category">{{ post.category or 'Uncategorized' }}</span>
+        <h1 class="post-title-detail">{{ post.contents[0].title if post.contents else 'Untitled' }}</h1>
+        <div class="post-meta">
+            <span class="post-author">
+                By <a href="{{ url_for('main.profile', user_id=post.author.user_id) }}">{{ post.author.name }}</a>
+            </span>
+            <span class="post-date">{{ post.created_at.strftime('%B %d, %Y at %H:%M') }}</span>
+            <span class="post-status">Status: {{ post.status }}</span>
+        </div>
+    </div>
+    
+    <div class="post-content-detail">
+        {% if post.contents %}
+            {{ post.contents[0].content | replace('\n', '<br>') | safe }}
+        {% else %}
+            <p>No content available.</p>
+        {% endif %}
+    </div>
+    
+    {% if current_user.is_authenticated and current_user.user_id == post.author_id %}
+        <div class="post-actions">
+            <a href="{{ url_for('posts.edit', post_id=post.post_id) }}" class="btn btn-primary">Edit Post</a>
+            <form method="POST" action="{{ url_for('posts.delete', post_id=post.post_id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this post?');">
+                <button type="submit" class="btn btn-danger">Delete Post</button>
+            </form>
+        </div>
+    {% endif %}
+    
+    <div class="post-navigation">
+        <a href="{{ url_for('main.index', lang=current_lang) }}" class="btn btn-secondary">← Back to Home</a>
+    </div>
+</article>
+{% endblock %}

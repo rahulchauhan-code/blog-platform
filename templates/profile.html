@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.name }}'s Profile - Multi-Language Blog{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <div class="profile-avatar">
+            {{ user.name[0].upper() }}
+        </div>
+        <div class="profile-info">
+            <h1>{{ user.name }}</h1>
+            <p class="username">@{{ user.username }}</p>
+            <p class="bio">{{ user.bio or 'No bio available' }}</p>
+            <p class="member-since">Member since {{ user.create_at.strftime('%B %Y') }}</p>
+        </div>
+    </div>
+    
+    <div class="profile-posts">
+        <h2>Posts by {{ user.name }}</h2>
+        {% if posts %}
+            <div class="posts-grid">
+                {% for post in posts %}
+                    <div class="post-card">
+                        <div class="post-header">
+                            <span class="post-category">{{ post.category or 'Uncategorized' }}</span>
+                            <span class="post-date">{{ post.created_at.strftime('%B %d, %Y') }}</span>
+                        </div>
+                        
+                        {% if post.contents %}
+                            <h3 class="post-title">
+                                <a href="{{ url_for('posts.view', post_id=post.post_id) }}">
+                                    {{ post.contents[0].title }}
+                                </a>
+                            </h3>
+                            <p class="post-excerpt">
+                                {{ post.contents[0].content[:150] }}...
+                            </p>
+                        {% endif %}
+                        
+                        <a href="{{ url_for('posts.view', post_id=post.post_id) }}" class="read-more">
+                            Read More →
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="no-posts">No published posts yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
