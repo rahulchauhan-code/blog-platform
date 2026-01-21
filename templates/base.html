@@ -10,6 +10,13 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Page loader (shows while page/resources load) -->
+    <div id="site-loader" aria-hidden="true">
+        <div class="loader-inner" role="status" aria-live="polite" aria-label="Loading">
+            <div class="spinner" aria-hidden="true"></div>
+            <div class="loader-text">Loading...</div>
+        </div>
+    </div>
     <!-- Navigation -->
     {% include 'partials/navbar.html' %}
 

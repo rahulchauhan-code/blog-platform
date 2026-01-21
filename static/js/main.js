@@ -177,3 +177,21 @@ window.scrollToTop = scrollToTop;
 window.toggleMobileMenu = toggleMobileMenu;
 window.previewImage = previewImage;
 window.searchPosts = searchPosts;
+
+// Loader hide logic: hide overlay on window load or after timeout
+function hideSiteLoader() {
+    const loader = document.getElementById('site-loader');
+    if (!loader) return;
+    loader.classList.add('hidden');
+    setTimeout(() => {
+        if (loader.parentNode) loader.parentNode.removeChild(loader);
+    }, 800);
+}
+
+// Hide when all resources finished loading
+window.addEventListener('load', function() {
+    hideSiteLoader();
+});
+
+// Fallback: ensure loader is removed after 8 seconds to avoid stuck state
+setTimeout(hideSiteLoader, 8000);

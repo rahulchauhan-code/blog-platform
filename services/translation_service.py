@@ -1,4 +1,5 @@
 import requests
+import os
 import logging
 import functools
 from flask import current_app
@@ -12,8 +13,8 @@ logger = logging.getLogger(__name__)
 # Shared session with retries to handle transient errors and 429s
 _session = requests.Session()
 _retry_strategy = Retry(
-    total=1,
-    backoff_factor=0.5,
+    total=0,
+    backoff_factor=0.1,
     status_forcelist=[429, 500, 502, 503, 504],
     allowed_methods=["GET", "POST"],
     raise_on_status=False,
@@ -45,6 +46,14 @@ class TranslationService:
         Returns:
             str: Translated text or original text if translation fails
         """
+        # Environment-level override: if TRANSLATION_ENABLED env var set to 'false', skip translations
+        try:
+            if os.environ.get('TRANSLATION_ENABLED', '').lower() == 'false':
+                logger.info('Translation disabled by TRANSLATION_ENABLED env var; returning original text')
+                return text
+        except Exception:
+            pass
+
         # Short-circuit if translations are disabled in config (production hotfix)
         try:
             if not current_app.config.get('TRANSLATION_ENABLED', True):

@@ -115,7 +115,15 @@ def create_app(config_name='development'):
     return app
 
 # Create the application instance
-app = create_app(os.environ.get('FLASK_ENV', 'development'))
+# Prefer explicit FLASK_ENV or FLASK_CONFIG; default to 'production' on hosts
+config_name = os.environ.get('FLASK_ENV') or os.environ.get('FLASK_CONFIG') or 'production'
+app = create_app(config_name)
+
+# Log chosen configuration and translation flag at startup
+try:
+    logger.info('App started with config=%s TRANSLATION_ENABLED=%s', config_name, app.config.get('TRANSLATION_ENABLED'))
+except Exception:
+    pass
 
 if __name__ == '__main__':
     port = int(os.environ.get('SERVER_PORT', 5000))
