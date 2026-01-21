@@ -8,6 +8,8 @@ from config import config
 from models import db, User
 from routes import main_bp, auth_bp, posts_bp
 from services import TranslationService
+from flask import jsonify, request, abort
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -40,6 +42,29 @@ def create_app(config_name='development'):
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(posts_bp, url_prefix='/posts')
 
+    # Debug endpoint (disabled unless DEBUG_KEY env var is set)
+    @app.route('/_debug_db')
+    def _debug_db():
+        debug_key = app.config.get('DEBUG_KEY') or os.environ.get('DEBUG_KEY')
+        provided = request.args.get('key')
+        if not debug_key or provided != debug_key:
+            abort(404)
+
+        from sqlalchemy import inspect
+        try:
+            uri = app.config.get('SQLALCHEMY_DATABASE_URI')
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+            result = {'database_uri': uri, 'tables': tables}
+            # include simple counts for key tables if present
+            if 'post' in tables:
+                count = db.session.execute('SELECT COUNT(*) FROM post').scalar()
+                result['post_count'] = int(count or 0)
+            return jsonify(result)
+        except Exception as e:
+            logger.exception('Error inspecting database')
+            return jsonify({'error': str(e)}), 500
+
     @app.context_processor
     def inject_globals():
         """Provide `current_lang` and `supported_languages` to all templates."""
@@ -68,11 +93,19 @@ def create_app(config_name='development'):
     # Create database tables
     with app.app_context():
         try:
-            # This will create tables if they don't exist
-            # Note: For production, use Flask-Migrate instead
-            logger.info("Database initialized successfully")
+            # If migrations aren't present on the server, create tables as a safe fallback.
+            # Preferred approach: include migration files and run `flask db upgrade` during deploy.
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+            if not tables:
+                logger.info('No tables found in DB — creating tables with db.create_all()')
+                db.create_all()
+                logger.info('Database tables created (db.create_all()).')
+            else:
+                logger.info('Database already has tables: %s', tables)
         except Exception as e:
-            logger.error(f"Error initializing database: {str(e)}")
+            logger.exception(f"Error initializing database: {str(e)}")
     
     return app
 
