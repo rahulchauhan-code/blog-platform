@@ -17,7 +17,15 @@ logger = logging.getLogger(__name__)
 
 def create_app(config_name='development'):
     """Application factory pattern"""
-    app = Flask(__name__)
+    # Use instance_relative_config so the `instance/` folder is available
+    # for runtime files (like the sqlite DB) and can be mounted/persisted
+    app = Flask(__name__, instance_relative_config=True)
+    # Ensure the instance folder exists (Flask expects it for instance_relative_config)
+    try:
+        os.makedirs(app.instance_path, exist_ok=True)
+    except Exception:
+        # If creating instance path fails, continue — DB init will surface errors.
+        logger.exception('Could not create instance path')
     
     # Load configuration
     app.config.from_object(config[config_name])
@@ -95,22 +103,26 @@ def create_app(config_name='development'):
         logger.exception('Internal server error:')
         return render_template('errors/500.html'), 500
     
-    # Create database tables
-    with app.app_context():
-        try:
-            # If migrations aren't present on the server, create tables as a safe fallback.
-            # Preferred approach: include migration files and run `flask db upgrade` during deploy.
-            from sqlalchemy import inspect
-            inspector = inspect(db.engine)
-            tables = inspector.get_table_names()
-            if not tables:
-                logger.info('No tables found in DB — creating tables with db.create_all()')
-                db.create_all()
-                logger.info('Database tables created (db.create_all()).')
-            else:
-                logger.info('Database already has tables: %s', tables)
-        except Exception as e:
-            logger.exception(f"Error initializing database: {str(e)}")
+    # Create database tables automatically only in development as a safe
+    # convenience. In production (Render, Heroku, etc.) prefer running
+    # migrations (`flask db upgrade`) during deploy. Auto-creating tables in
+    # production can hide schema drift and cause data-loss risks.
+    if app.config.get('DEBUG'):
+        with app.app_context():
+            try:
+                from sqlalchemy import inspect
+                inspector = inspect(db.engine)
+                tables = inspector.get_table_names()
+                if not tables:
+                    logger.info('No tables found in DB — creating tables with db.create_all()')
+                    db.create_all()
+                    logger.info('Database tables created (db.create_all()).')
+                else:
+                    logger.info('Database already has tables: %s', tables)
+            except Exception as e:
+                logger.exception(f"Error initializing database: {str(e)}")
+    else:
+        logger.info('Skipping automatic DB create in non-debug mode; use migrations.')
     
     return app
 

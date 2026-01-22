@@ -2,6 +2,9 @@ import os
 from dotenv import load_dotenv
 from datetime import timedelta
 
+# Base directory of the application (used for sqlite file path)
+basedir = os.path.abspath(os.path.dirname(__file__))
+
 load_dotenv()
 
 class Config:
@@ -23,7 +26,15 @@ class Config:
         if _spring_user and _spring_pass and _spring_host and _spring_db:
             _db_url = f"postgresql://{_spring_user}:{_spring_pass}@{_spring_host}/{_spring_db}"
 
-    SQLALCHEMY_DATABASE_URI = _db_url or 'sqlite:///blog.db'
+    # Use a file-based SQLite DB inside the instance folder by default so the
+    # database file is colocated with the app and easier to mount/persist.
+    default_sqlite_path = os.path.join(basedir, 'instance', 'blog.db')
+    # Normalize old-style Heroku/Render prefix 'postgres://' to SQLAlchemy's
+    # expected 'postgresql://' scheme.
+    if _db_url and _db_url.startswith('postgres://'):
+        _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+
+    SQLALCHEMY_DATABASE_URI = _db_url or f"sqlite:///{default_sqlite_path}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = True
     
