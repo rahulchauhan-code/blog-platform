@@ -95,22 +95,20 @@ def create_app(config_name='development'):
         logger.exception('Internal server error:')
         return render_template('errors/500.html'), 500
     
-    # Create database tables
+    # Database initialization: Flask-Migrate handles all schema management
+    # IMPORTANT: Do NOT use db.create_all() in production - it can cause data loss on redeploy
+    # Always use: flask db upgrade (run in Render's startCommand)
     with app.app_context():
         try:
-            # If migrations aren't present on the server, create tables as a safe fallback.
-            # Preferred approach: include migration files and run `flask db upgrade` during deploy.
             from sqlalchemy import inspect
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
-            if not tables:
-                logger.info('No tables found in DB — creating tables with db.create_all()')
-                db.create_all()
-                logger.info('Database tables created (db.create_all()).')
+            if tables:
+                logger.info('Database initialized with tables: %s', tables)
             else:
-                logger.info('Database already has tables: %s', tables)
+                logger.warning('No tables found. Ensure Flask-Migrate migrations are applied via "flask db upgrade" during deploy.')
         except Exception as e:
-            logger.exception(f"Error initializing database: {str(e)}")
+            logger.exception(f"Error checking database tables: {str(e)}")
     
     return app
 

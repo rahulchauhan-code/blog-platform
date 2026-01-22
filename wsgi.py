@@ -1,4 +1,5 @@
+"""WSGI entry point for production servers like Gunicorn on Render"""
 from app import app
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     app.run()

@@ -23,6 +23,10 @@ class Config:
         if _spring_user and _spring_pass and _spring_host and _spring_db:
             _db_url = f"postgresql://{_spring_user}:{_spring_pass}@{_spring_host}/{_spring_db}"
 
+    # For Render production: append sslmode=require if PostgreSQL and not already present
+    if _db_url and 'postgresql://' in _db_url and 'sslmode' not in _db_url:
+        _db_url = _db_url.rstrip('/') + '?sslmode=require'
+
     SQLALCHEMY_DATABASE_URI = _db_url or 'sqlite:///blog.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = True
