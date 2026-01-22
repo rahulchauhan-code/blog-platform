@@ -38,7 +38,7 @@ Thumbs.db
 logs/
 
 # Flask-Migrate
-migrations/
+# (migrations/ tracked in repo so production can run upgrades)
 
 # Testing
 .pytest_cache/
