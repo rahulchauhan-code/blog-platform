@@ -29,10 +29,12 @@ class Config:
     # Use a file-based SQLite DB inside the instance folder by default so the
     # database file is colocated with the app and easier to mount/persist.
     default_sqlite_path = os.path.join(basedir, 'instance', 'blog.db')
-    # Normalize old-style Heroku/Render prefix 'postgres://' to SQLAlchemy's
-    # expected 'postgresql://' scheme.
+    # Normalize old-style Heroku/Render prefix 'postgres://' to the
+    # SQLAlchemy dialect that uses psycopg (psycopg v3). Render provides
+    # `postgres://` by default; converting to `postgresql+psycopg://` ensures
+    # SQLAlchemy will attempt to use the `psycopg` driver we install above.
     if _db_url and _db_url.startswith('postgres://'):
-        _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+        _db_url = _db_url.replace('postgres://', 'postgresql+psycopg://', 1)
 
     SQLALCHEMY_DATABASE_URI = _db_url or f"sqlite:///{default_sqlite_path}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
