@@ -13,23 +13,8 @@
     <!-- Page loader (shows while page/resources load) -->
     <div id="site-loader" aria-hidden="true">
         <div class="loader-inner" role="status" aria-live="polite" aria-label="Loading">
-            <!-- Unique loader: three orbiting dots + brand mark -->
-            <div class="orbit">
-                <span class="dot dot-a" aria-hidden="true"></span>
-                <span class="dot dot-b" aria-hidden="true"></span>
-                <span class="dot dot-c" aria-hidden="true"></span>
-                <svg class="brand-mark" width="48" height="48" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-                    <defs>
-                        <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#3498db" />
-                            <stop offset="100%" stop-color="#2ecc71" />
-                        </linearGradient>
-                    </defs>
-                    <circle cx="24" cy="24" r="10" fill="url(#g)" opacity="0.95" />
-                    <path d="M24 14 L30 26 L18 26 Z" fill="rgba(255,255,255,0.95)" transform="translate(0,2)" />
-                </svg>
-            </div>
-            <div class="loader-text">Preparing your reading experience…</div>
+            <div class="spinner" aria-hidden="true"></div>
+            <div class="loader-text">Loading...</div>
         </div>
     </div>
     <!-- Navigation -->

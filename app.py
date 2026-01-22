@@ -95,55 +95,22 @@ def create_app(config_name='development'):
         logger.exception('Internal server error:')
         return render_template('errors/500.html'), 500
     
-    # Database initialization: Flask-Migrate handles all schema management
-    # Database initialization & safety checks
-    # IMPORTANT: In production we require a proper DATABASE_URL and committed migrations.
+    # Create database tables
     with app.app_context():
         try:
-            db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', '') or os.environ.get('DATABASE_URL')
-            # Masked display for logs (show scheme and host only)
-            masked_uri = None
-            try:
-                if db_uri:
-                    if '://' in db_uri:
-                        scheme, rest = db_uri.split('://', 1)
-                        host = rest.split('@')[-1].split('/')[0]
-                        masked_uri = f"{scheme}://{host}"
-                    else:
-                        masked_uri = db_uri
-            except Exception:
-                masked_uri = 'unknown'
-
-            # If running in production, ensure DATABASE_URL is provided and not sqlite
-            if config_name == 'production':
-                if not db_uri:
-                    logger.critical('No DATABASE_URL detected in production. Aborting startup to avoid falling back to SQLite.')
-                    raise SystemExit('Missing DATABASE_URL in production environment. Set DATABASE_URL to your PostgreSQL connection string.')
-                if db_uri.startswith('sqlite'):
-                    logger.critical('Detected SQLite DATABASE_URL in production (%s). Aborting startup.', masked_uri)
-                    raise SystemExit('Refusing to run with SQLite in production. Configure DATABASE_URL to point to PostgreSQL.')
-
-                # Ensure migrations exist and were committed
-                migrations_dir = os.path.join(os.path.dirname(__file__), 'migrations')
-                versions_dir = os.path.join(migrations_dir, 'versions')
-                if not (os.path.isdir(migrations_dir) and os.path.isdir(versions_dir) and any(os.scandir(versions_dir))):
-                    logger.critical('No Flask-Migrate migrations found in repo. Aborting startup.')
-                    raise SystemExit('Migrations missing. Run `flask db init` (if first time), `flask db migrate` and commit the migrations, then deploy.')
-
+            # If migrations aren't present on the server, create tables as a safe fallback.
+            # Preferred approach: include migration files and run `flask db upgrade` during deploy.
             from sqlalchemy import inspect
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
-            if tables:
-                logger.info('Database initialized with tables: %s (db=%s)', tables, masked_uri)
+            if not tables:
+                logger.info('No tables found in DB — creating tables with db.create_all()')
+                db.create_all()
+                logger.info('Database tables created (db.create_all()).')
             else:
-                # If migrations exist, suggest running upgrade; otherwise instruct to create migrations
-                logger.error('No tables found in database (db=%s). Ensure migrations are applied: run `flask db upgrade`.', masked_uri)
-                if config_name == 'production':
-                    raise SystemExit('No tables present in the database. Apply migrations (flask db upgrade) before starting in production.')
-        except SystemExit:
-            raise
+                logger.info('Database already has tables: %s', tables)
         except Exception as e:
-            logger.exception(f"Error checking database tables: {str(e)}")
+            logger.exception(f"Error initializing database: {str(e)}")
     
     return app
 
