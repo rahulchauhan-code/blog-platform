@@ -17,15 +17,7 @@ logger = logging.getLogger(__name__)
 
 def create_app(config_name='development'):
     """Application factory pattern"""
-    # Use instance_relative_config so the `instance/` folder is available
-    # for runtime files (like the sqlite DB) and can be mounted/persisted
-    app = Flask(__name__, instance_relative_config=True)
-    # Ensure the instance folder exists (Flask expects it for instance_relative_config)
-    try:
-        os.makedirs(app.instance_path, exist_ok=True)
-    except Exception:
-        # If creating instance path fails, continue — DB init will surface errors.
-        logger.exception('Could not create instance path')
+    app = Flask(__name__)
     
     # Load configuration
     app.config.from_object(config[config_name])
