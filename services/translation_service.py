@@ -88,8 +88,9 @@ class TranslationService:
                     _set_cached_translation(cache_key, text, _NEGATIVE_CACHE_TTL_SECONDS)
                     return text
 
-                # LibreTranslate API response format
-                translated_text = result.get('translatedText')
+                # LibreTranslate API response format - check multiple possible keys
+                translated_text = result.get('translatedText') or result.get('translated_text')
+                logger.debug(f'API Response: {result}')
 
                 # Check if translation was successful (not empty or same as original)
                 if translated_text and translated_text != text:
