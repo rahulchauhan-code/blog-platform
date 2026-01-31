@@ -59,7 +59,7 @@ class TranslationService:
             return cached
 
         try:
-            api_url = current_app.config.get('TRANSLATION_API_URL', 'https://libretranslate.de/translate')
+            api_url = current_app.config.get('TRANSLATION_API_URL', 'https://libretranslate.com/translate')
             api_key = current_app.config.get('TRANSLATION_API_KEY')
 
             # LibreTranslate uses POST requests with JSON payload
@@ -75,11 +75,18 @@ class TranslationService:
             response = requests.post(
                 api_url,
                 json=payload,
-                timeout=10
+                timeout=10,
+                allow_redirects=True
             )
             
             if response.status_code == 200:
-                result = response.json()
+                # Guard against non-JSON responses
+                try:
+                    result = response.json()
+                except ValueError:
+                    logger.warning('Translation API returned non-JSON response')
+                    _set_cached_translation(cache_key, text, _NEGATIVE_CACHE_TTL_SECONDS)
+                    return text
 
                 # LibreTranslate API response format
                 translated_text = result.get('translatedText')
