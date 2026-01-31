@@ -59,39 +59,39 @@ class TranslationService:
             return cached
 
         try:
-            api_url = 'https://api.mymemory.translated.net/get'
-            
-            # MyMemory API uses GET requests with query parameters
-            params = {
+            api_url = current_app.config.get('TRANSLATION_API_URL', 'https://libretranslate.de/translate')
+            api_key = current_app.config.get('TRANSLATION_API_KEY')
+
+            # LibreTranslate uses POST requests with JSON payload
+            payload = {
                 'q': text,
-                'langpair': f'{source_lang}|{target_lang}'
+                'source': source_lang,
+                'target': target_lang,
+                'format': 'text'
             }
-            
-            response = requests.get(
+            if api_key:
+                payload['api_key'] = api_key
+
+            response = requests.post(
                 api_url,
-                params=params,
+                json=payload,
                 timeout=10
             )
             
             if response.status_code == 200:
                 result = response.json()
-                
-                # MyMemory API response format
-                if 'responseData' in result:
-                    translated_text = result['responseData'].get('translatedText', text)
-                    
-                    # Check if translation was successful (not empty or same as original)
-                    if translated_text and translated_text != text:
-                        logger.debug(f'Translated from {source_lang} to {target_lang}')
-                        _set_cached_translation(cache_key, translated_text, _CACHE_TTL_SECONDS)
-                        return translated_text
-                    else:
-                        logger.debug('Translation returned same text, using original')
-                        _set_cached_translation(cache_key, text, _CACHE_TTL_SECONDS)
-                        return text
+
+                # LibreTranslate API response format
+                translated_text = result.get('translatedText')
+
+                # Check if translation was successful (not empty or same as original)
+                if translated_text and translated_text != text:
+                    logger.debug(f'Translated from {source_lang} to {target_lang}')
+                    _set_cached_translation(cache_key, translated_text, _CACHE_TTL_SECONDS)
+                    return translated_text
                 else:
-                    logger.warning('Unexpected API response format')
-                    _set_cached_translation(cache_key, text, _NEGATIVE_CACHE_TTL_SECONDS)
+                    logger.debug('Translation returned same text, using original')
+                    _set_cached_translation(cache_key, text, _CACHE_TTL_SECONDS)
                     return text
             else:
                 logger.warning(f'Translation API returned status {response.status_code}')
