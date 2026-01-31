@@ -1,6 +1,8 @@
 """Translation service for multi-language support"""
+import requests
 import logging
 import time
+from flask import current_app
 
 logger = logging.getLogger(__name__)
 
@@ -21,15 +23,6 @@ def _get_cached_translation(cache_key):
 
 def _set_cached_translation(cache_key, value, ttl_seconds):
     _translation_cache[cache_key] = (value, time.time() + ttl_seconds)
-
-try:
-    import translators as ts
-    TRANSLATORS_AVAILABLE = True
-except ImportError:
-    TRANSLATORS_AVAILABLE = False
-    logger.warning('translators library not installed - translations will be disabled')
-
-from flask import current_app
 
 class TranslationService:
     """Service for translating text content"""
@@ -52,11 +45,6 @@ class TranslationService:
             logger.debug('Translation disabled, returning original text')
             return text
         
-        # Check if translators library is available
-        if not TRANSLATORS_AVAILABLE:
-            logger.debug('Translators library not available')
-            return text
-        
         # Skip translation if source and target are the same
         if source_lang == target_lang:
             return text
@@ -71,20 +59,55 @@ class TranslationService:
             return cached
 
         try:
-            # Use Google Translate via translators library
-            translated_text = ts.google(text, from_language=source_lang, to_language=target_lang)
+            api_url = 'https://api.mymemory.translated.net/get'
             
-            if translated_text and translated_text != text:
-                logger.debug(f'Translated from {source_lang} to {target_lang}')
-                _set_cached_translation(cache_key, translated_text, _CACHE_TTL_SECONDS)
-                return translated_text
+            # MyMemory API uses GET requests with query parameters
+            params = {
+                'q': text,
+                'langpair': f'{source_lang}|{target_lang}'
+            }
+            
+            response = requests.get(
+                api_url,
+                params=params,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                
+                # MyMemory API response format
+                if 'responseData' in result:
+                    translated_text = result['responseData'].get('translatedText', text)
+                    
+                    # Check if translation was successful (not empty or same as original)
+                    if translated_text and translated_text != text:
+                        logger.debug(f'Translated from {source_lang} to {target_lang}')
+                        _set_cached_translation(cache_key, translated_text, _CACHE_TTL_SECONDS)
+                        return translated_text
+                    else:
+                        logger.debug('Translation returned same text, using original')
+                        _set_cached_translation(cache_key, text, _CACHE_TTL_SECONDS)
+                        return text
+                else:
+                    logger.warning('Unexpected API response format')
+                    _set_cached_translation(cache_key, text, _NEGATIVE_CACHE_TTL_SECONDS)
+                    return text
             else:
-                logger.debug('Translation returned same text, using original')
-                _set_cached_translation(cache_key, text, _CACHE_TTL_SECONDS)
+                logger.warning(f'Translation API returned status {response.status_code}')
+                _set_cached_translation(cache_key, text, _NEGATIVE_CACHE_TTL_SECONDS)
                 return text
                 
+        except requests.exceptions.Timeout:
+            logger.error('Translation request timed out')
+            _set_cached_translation(cache_key, text, _NEGATIVE_CACHE_TTL_SECONDS)
+            return text
+        except requests.exceptions.RequestException as e:
+            logger.error(f'Translation request failed: {e}')
+            _set_cached_translation(cache_key, text, _NEGATIVE_CACHE_TTL_SECONDS)
+            return text
         except Exception as e:
-            logger.error(f'Translation failed: {e}')
+            logger.error(f'Unexpected error during translation: {e}')
             _set_cached_translation(cache_key, text, _NEGATIVE_CACHE_TTL_SECONDS)
             return text
     

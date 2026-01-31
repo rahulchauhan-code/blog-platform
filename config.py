@@ -20,7 +20,7 @@ class Config:
     SQLALCHEMY_ECHO = True
     
     # Translation API - Using MyMemory (free, no API key required)
-    TRANSLATION_API_URL = os.environ.get('TRANSLATION_API_URL', 'https://libretranslate.com/translate')
+    TRANSLATION_API_URL = os.environ.get('TRANSLATION_API_URL', 'https://api.mymemory.translated.net/get')
     TRANSLATION_API_KEY = os.environ.get('TRANSLATION_API_KEY', '')
     # Toggle runtime translation to avoid external API calls in production
     TRANSLATION_ENABLED = os.environ.get('TRANSLATION_ENABLED', 'true').lower() == 'true'
@@ -48,14 +48,11 @@ class ProductionConfig(Config):
     DEBUG = False
     SQLALCHEMY_ECHO = False
     SESSION_COOKIE_SECURE = True
-    # Keep translations enabled in production (controlled via env var)
-    TRANSLATION_ENABLED = os.environ.get('TRANSLATION_ENABLED', 'true').lower() == 'true'
+    # Disable translations by default in production to avoid rate limits/outages
+    TRANSLATION_ENABLED = False
 
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig
 }
-
-
-
