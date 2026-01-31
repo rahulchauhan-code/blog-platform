@@ -9,8 +9,13 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     
     # Database Configuration
-    # Prefer DATABASE_URL for production (Render provides this); fall back to SQLite for local dev
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///blog.db'
+    # For psycopg v3 (Python 3.13+), use postgresql+psycopg:// scheme
+    # Render provides DATABASE_URL; fall back to SQLite for local dev
+    db_url = os.environ.get('DATABASE_URL') or 'sqlite:///blog.db'
+    # Replace old psycopg2 URLs with psycopg v3 scheme
+    if db_url.startswith('postgresql://'):
+        db_url = db_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+    SQLALCHEMY_DATABASE_URI = db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = True
     
