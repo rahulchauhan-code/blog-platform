@@ -1,6 +1,6 @@
 # Multi-Language Blogging Platform - Flask Edition
 
-A feature-rich blogging platform built with Flask that supports multi-language translation using LibreTranslate API. Users can write posts in their native language and readers can view content in their preferred language.
+A feature-rich blogging platform built with Flask that supports multi-language translation using the MyMemory API. Users can write posts in their native language and readers can view content in their preferred language.
 
 ## Features
 
@@ -16,10 +16,10 @@ A feature-rich blogging platform built with Flask that supports multi-language t
 ## Technology Stack
 
 - **Backend:** Python Flask
-- **Database:** Oracle Database (configurable for other databases)
+- **Database:** PostgreSQL (Render)
 - **ORM:** SQLAlchemy
 - **Authentication:** Flask-Login
-- **Translation:** LibreTranslate API
+- **Translation:** MyMemory API
 - **Frontend:** HTML5, CSS3, JavaScript (Jinja2 Templates)
 - **Migration:** Flask-Migrate
 
@@ -31,7 +31,6 @@ flask-blog-app/
 ├── config.py              # Configuration settings
 ├── models.py              # Database models
 ├── requirements.txt       # Python dependencies
-├── .env.example          # Environment variables template
 ├── routes/               # Application routes (blueprints)
 │   ├── __init__.py
 │   ├── main.py          # Main routes
@@ -68,7 +67,7 @@ flask-blog-app/
 ### Prerequisites
 
 - Python 3.8 or higher
-- Oracle Database (or configure for SQLite/PostgreSQL/MySQL)
+- PostgreSQL (Render)
 - pip (Python package manager)
 
 ### Step 1: Clone or Navigate to the Project
@@ -109,21 +108,14 @@ Copy the example environment file and update with your settings:
 copy .env.example .env
 ```
 
-Edit `.env` file with your database credentials and settings:
+Edit `.env` with your values:
 
 ```
-FLASK_APP=app.py
 FLASK_ENV=development
 SECRET_KEY=your-secret-key-here
-
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
-DB_HOST=localhost
-DB_PORT=1521
-DB_SERVICE=xe
-
-TRANSLATION_API_URL=https://libretranslate.de/translate
-TRANSLATION_API_KEY=
+DATABASE_URL=postgresql://username:password@host:5432/dbname
+TRANSLATION_API_URL=https://api.mymemory.translated.net/get
+TRANSLATION_ENABLED=true
 ```
 
 ### Step 6: Initialize Database
@@ -158,21 +150,39 @@ flask run
 
 The application will be available at `http://localhost:5000`
 
+## Deploy to Render (Production)
+
+**Start Command:**
+
+```
+gunicorn wsgi:app
+```
+
+**Environment Variables to set in Render:**
+
+- `DATABASE_URL` (Render provides this automatically when you attach a PostgreSQL database)
+- `SECRET_KEY` (required)
+- `FLASK_ENV=production`
+- `TRANSLATION_ENABLED=false` (recommended for production to avoid rate limits)
+- `TRANSLATION_API_URL=https://api.mymemory.translated.net/get` (optional override)
+- `TRANSLATION_API_KEY` (optional)
+- `DEBUG_KEY` (optional, to protect `/_debug_db` endpoint)
+
+**Notes:**
+- Render sets `PORT` automatically; no manual setting needed.
+
 ## Database Configuration
 
-### Using Oracle Database (Default)
+### Using PostgreSQL (Render)
 
-The application is configured for Oracle Database by default. Make sure you have:
-- Oracle Database installed and running
-- cx_Oracle package installed
-- Proper credentials in `.env` file
+Set `DATABASE_URL` in your Render service environment variables. Render provides this value automatically when you attach a PostgreSQL database.
 
 ### Using SQLite (For Development)
 
 Edit `config.py` and change the database URI:
 
 ```python
-SQLALCHEMY_DATABASE_URI = 'sqlite:///blog.db'
+SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
 ```
 
 Then install SQLite support:
@@ -183,7 +193,7 @@ pip install flask-sqlalchemy
 ### Using PostgreSQL
 
 ```python
-SQLALCHEMY_DATABASE_URI = 'postgresql://username:password@localhost/dbname'
+SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
 ```
 
 ```bash
@@ -269,19 +279,17 @@ pip install pymysql
 
 If you encounter database connection errors:
 
-1. Verify Oracle Database is running
-2. Check credentials in `.env` file
-3. Ensure Oracle Instant Client is installed
-4. Test connection: `tnsping <your_service_name>`
+1. Verify the Render PostgreSQL database is running
+2. Check the `DATABASE_URL` value in Render
+3. Ensure the host is reachable from your app environment
+4. Test connection using `psql` or a DB client
 
 ### Translation API Issues
 
 If translations aren't working:
 
 1. Check internet connection
-2. Verify `TRANSLATION_API_URL` in `.env`
-3. Try alternative API: `https://translate.argosopentech.com/translate`
-4. Check API logs in console
+2. Check API logs in console
 
 ### Import Errors
 
@@ -315,7 +323,7 @@ Edit `static/css/style.css` to customize the appearance.
 ## Security Considerations
 
 - Change `SECRET_KEY` in production
-- Use environment variables for sensitive data
+- Avoid hardcoding sensitive data in shared repositories
 - Enable HTTPS in production
 - Implement CSRF protection (Flask-WTF)
 - Use strong passwords
@@ -349,8 +357,8 @@ For issues and questions, please create an issue in the repository.
 ## Credits
 
 - Flask Framework
-- LibreTranslate for translation services
-- Oracle Database
+- MyMemory for translation services
+- PostgreSQL (Render)
 - SQLAlchemy ORM
 
 ---

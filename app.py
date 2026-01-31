@@ -1,15 +1,14 @@
 from flask import Flask, render_template, request
 from flask_login import LoginManager
 from flask_migrate import Migrate
-import os
 import logging
+import os
 
 from config import config
 from models import db, User
 from routes import main_bp, auth_bp, posts_bp
 from services import TranslationService
 from flask import jsonify, request, abort
-import os
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -45,7 +44,7 @@ def create_app(config_name='development'):
     # Debug endpoint (disabled unless DEBUG_KEY env var is set)
     @app.route('/_debug_db')
     def _debug_db():
-        debug_key = app.config.get('DEBUG_KEY') or os.environ.get('DEBUG_KEY')
+        debug_key = app.config.get('DEBUG_KEY')
         provided = request.args.get('key')
         if not debug_key or provided != debug_key:
             abort(404)
@@ -126,5 +125,5 @@ except Exception:
     pass
 
 if __name__ == '__main__':
-    port = int(os.environ.get('SERVER_PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    port = int(os.environ.get('PORT') or os.environ.get('SERVER_PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=(config_name == 'development'))

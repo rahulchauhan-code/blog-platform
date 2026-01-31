@@ -95,7 +95,7 @@ Blueprint-based route organization for better code structure:
 Business logic separated from routes:
 
 - **translation_service.py**: 
-  - Integration with LibreTranslate API
+  - Integration with MyMemory API
   - Text translation functionality
   - Supported languages management
 
@@ -175,7 +175,7 @@ Client-side assets:
 
 3. **Translation Flow**:
    ```
-   Content → TranslationService → LibreTranslate API → Translated Content
+  Content → TranslationService → MyMemory API → Translated Content
    ```
 
 ## Design Patterns Used
@@ -190,7 +190,7 @@ Client-side assets:
 
 - **Development**: Debug mode, verbose logging
 - **Production**: Security features, optimized settings
-- **Environment Variables**: Sensitive data in .env
+- **Environment Variables**: Sensitive data in `.env` or Render dashboard
 
 ## Security Features
 

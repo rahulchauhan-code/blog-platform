@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, make_response, current_app
 from flask_login import login_user, logout_user, current_user, login_required
 from models import db, User
-from models import db, User
 from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
@@ -97,7 +96,8 @@ def register():
         except Exception as e:
             db.session.rollback()
             flash('An error occurred during registration. Please try again.', 'danger')
-            print(f"Error: {str(e)}")
+            import logging
+            logging.error(f"Error during registration: {str(e)}")
     
     return render_template('auth/register.html')
 

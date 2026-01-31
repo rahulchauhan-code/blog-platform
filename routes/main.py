@@ -23,11 +23,11 @@ def index():
     if lang and lang != 'en':
         for post in posts:
             if post.category:
-                post.category = TranslationService.translate_text(post.category, lang)
+                post.category = TranslationService.translate(post.category, source_lang='en', target_lang=lang)
             # Translate post title and content
             for content in post.contents:
-                content.title = TranslationService.translate_text(content.title, lang)
-                content.content = TranslationService.translate_text(content.content, lang)
+                content.title = TranslationService.translate(content.title, source_lang='en', target_lang=lang)
+                content.content = TranslationService.translate(content.content, source_lang='en', target_lang=lang)
     
     supported_languages = TranslationService.get_supported_languages()
     
@@ -41,14 +41,9 @@ def index():
 
 
 @main_bp.route('/about')
-@login_required
 def about():
-    """Show the current user's profile (About page repurposed)."""
-    # Show only this user's published posts
-    posts = Post.query.filter_by(author_id=current_user.user_id, status='published').order_by(
-        Post.created_at.desc()
-    ).all()
-    return render_template('profile.html', user=current_user, posts=posts)
+    """About page""" 
+    return render_template('about.html')
 
 
 @main_bp.route('/profile/<int:user_id>')

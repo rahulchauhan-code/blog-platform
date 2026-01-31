@@ -8,8 +8,8 @@
    ```
 
 2. **Configure the application:**
-   - Edit `.env` file with your database credentials
-   - Update `SECRET_KEY` with a secure random string
+   - Copy `.env.example` to `.env`
+   - Update `SECRET_KEY` and `DATABASE_URL`
 
 3. **Start the application:**
    ```cmd
@@ -32,8 +32,8 @@
    ```
 
 3. **Configure the application:**
-   - Edit `.env` file with your database credentials
-   - Update `SECRET_KEY` with a secure random string
+   - Copy `.env.example` to `.env`
+   - Update `SECRET_KEY` and `DATABASE_URL`
 
 4. **Start the application:**
    ```bash
@@ -76,7 +76,7 @@ copy .env.example .env
 cp .env.example .env
 ```
 
-Edit `.env` file with your settings.
+Edit `.env` with your settings (`SECRET_KEY`, `DATABASE_URL`, etc.).
 
 ### 5. Initialize Database
 
@@ -140,35 +140,34 @@ flask db upgrade
 ```
 
 ### Run with Debug Mode
+Set `config_name` to `development` in `app.py`, then run:
+
 ```bash
-export FLASK_ENV=development  # Linux/Mac
-set FLASK_ENV=development     # Windows
 python app.py
 ```
 
 ## Troubleshooting
 
 ### Port Already in Use
-```bash
-# Change port in .env
-SERVER_PORT=5001
-```
+
+Change `SERVER_PORT` in `.env`.
 
 ### Database Connection Error
-- Check Oracle Database is running
-- Verify credentials in `.env`
-- Test connection with SQL Developer or similar tool
+- Verify the Render PostgreSQL database is running
+- Ensure the host is reachable from your app environment
+- Test connection with psql or a DB client
 
 ### Module Not Found Error
 ```bash
 pip install -r requirements.txt --upgrade
 ```
 
-### cx_Oracle Installation Issues (Windows)
-1. Download Oracle Instant Client
-2. Extract to C:\oracle\instantclient_XX_X
-3. Add to PATH environment variable
-4. Reinstall cx_Oracle: `pip install cx_oracle --upgrade`
+### PostgreSQL Driver Issues
+Reinstall the driver:
+
+```bash
+pip install psycopg2-binary --upgrade
+```
 
 ## Default Credentials (If you seed the database)
 

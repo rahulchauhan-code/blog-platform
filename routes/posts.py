@@ -16,7 +16,7 @@ def index():
     if lang and lang != 'en':
         for post in posts:
             if post.category:
-                post.category = TranslationService.translate_text(post.category, lang)
+                post.category = TranslationService.translate(post.category, source_lang='en', target_lang=lang)
     
     return render_template('posts/index.html', posts=posts, current_lang=lang)
 
@@ -57,7 +57,8 @@ def create():
         except Exception as e:
             db.session.rollback()
             flash('An error occurred while creating the post.', 'danger')
-            print(f"Error: {str(e)}")
+            import logging
+            logging.error(f"Error creating post: {str(e)}")
     
     return render_template('posts/create.html')
 
@@ -71,11 +72,11 @@ def view(post_id):
     # Translate content if lang parameter is provided
     if lang and lang != 'en':
         if post.category:
-            post.category = TranslationService.translate_text(post.category, lang)
+            post.category = TranslationService.translate(post.category, source_lang='en', target_lang=lang)
         
         for content in post.contents:
-            content.title = TranslationService.translate_text(content.title, lang)
-            content.content = TranslationService.translate_text(content.content, lang)
+            content.title = TranslationService.translate(content.title, source_lang='en', target_lang=lang)
+            content.content = TranslationService.translate(content.content, source_lang='en', target_lang=lang)
     
     return render_template('posts/view.html', post=post, current_lang=lang)
 
@@ -119,7 +120,8 @@ def edit(post_id):
         except Exception as e:
             db.session.rollback()
             flash('An error occurred while updating the post.', 'danger')
-            print(f"Error: {str(e)}")
+            import logging
+            logging.error(f"Error updating post: {str(e)}")
     
     return render_template('posts/edit.html', post=post)
 
@@ -143,7 +145,8 @@ def delete(post_id):
     except Exception as e:
         db.session.rollback()
         flash('An error occurred while deleting the post.', 'danger')
-        print(f"Error: {str(e)}")
+        import logging
+        logging.error(f"Error deleting post: {str(e)}")
         return redirect(url_for('posts.view', post_id=post_id))
 
 
