@@ -94,29 +94,39 @@ def create_app(config_name='development'):
         logger.exception('Internal server error:')
         return render_template('errors/500.html'), 500
     
-    # Create database tables
-    with app.app_context():
-        try:
-            # If migrations aren't present on the server, create tables as a safe fallback.
-            # Preferred approach: include migration files and run `flask db upgrade` during deploy.
-            from sqlalchemy import inspect
-            inspector = inspect(db.engine)
-            tables = inspector.get_table_names()
-            if not tables:
-                logger.info('No tables found in DB — creating tables with db.create_all()')
-                db.create_all()
-                logger.info('Database tables created (db.create_all()).')
-            else:
-                logger.info('Database already has tables: %s', tables)
-        except Exception as e:
-            logger.exception(f"Error initializing database: {str(e)}")
+    # Create database tables (delayed to avoid import errors)
+    @app.before_request
+    def init_db():
+        """Initialize database on first request only"""
+        if not hasattr(app, '_db_initialized'):
+            app._db_initialized = True
+            try:
+                with app.app_context():
+                    from sqlalchemy import inspect
+                    inspector = inspect(db.engine)
+                    tables = inspector.get_table_names()
+                    if not tables:
+                        logger.info('No tables found in DB — creating tables with db.create_all()')
+                        db.create_all()
+                        logger.info('Database tables created (db.create_all()).')
+                    else:
+                        logger.info('Database already has tables: %s', tables)
+            except Exception as e:
+                logger.error(f'Error initializing database: {e}')
     
     return app
 
 # Create the application instance
 # Prefer explicit FLASK_ENV or FLASK_CONFIG; default to 'production' on hosts
 config_name = os.environ.get('FLASK_ENV') or os.environ.get('FLASK_CONFIG') or 'production'
-app = create_app(config_name)
+logger.info(f'Loading config: {config_name}')
+
+try:
+    app = create_app(config_name)
+    logger.info(f'App created successfully with config={config_name}')
+except Exception as e:
+    logger.exception(f'Failed to create app: {e}')
+    raise
 
 # Log chosen configuration and translation flag at startup
 try:
