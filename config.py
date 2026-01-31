@@ -48,8 +48,8 @@ class ProductionConfig(Config):
     DEBUG = False
     SQLALCHEMY_ECHO = False
     SESSION_COOKIE_SECURE = True
-    # Disable translations by default in production to avoid rate limits/outages
-    TRANSLATION_ENABLED = False
+    # Keep translations enabled in production (controlled via env var)
+    TRANSLATION_ENABLED = os.environ.get('TRANSLATION_ENABLED', 'true').lower() == 'true'
 
 config = {
     'development': DevelopmentConfig,
