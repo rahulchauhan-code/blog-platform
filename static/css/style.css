@@ -500,6 +500,19 @@ textarea.form-control {
     font-weight: normal;
 }
 
+.forgot-password-link {
+    display: block;
+    text-align: right;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.forgot-password-link:hover {
+    text-decoration: underline;
+}
+
 /* Buttons */
 .btn {
     padding: 0.75rem 1.5rem;
