@@ -76,7 +76,7 @@ class TranslationService:
                 api_url,
                 json=payload,
                 timeout=10,
-                allow_redirects=True
+                headers={'Content-Type': 'application/json'}
             )
             
             if response.status_code == 200:
